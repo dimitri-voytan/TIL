@@ -31,10 +31,10 @@ services:
     ports:
       - "9100:9100"
 
-  nvidia-gpu-exporter:
-    image: utkuozdemir/nvidia_gpu_exporter:1.2.0
+  dcgm-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.1.7-3.1.4-ubuntu20.04
     ports:
-      - "9445:9445"
+      - "9400:9400"
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -56,7 +56,8 @@ services:
     environment:
       - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
     ipc: host
-    command: --model HuggingFaceTB/SmolLM-1.7B
+    command: >
+      --model HuggingFaceTB/SmolLM-1.7B \
     deploy:
       resources:
         reservations:
@@ -66,6 +67,19 @@ services:
               capabilities: [gpu]
     runtime: nvidia
 
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3001:8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    environment:
+      - OPENAI_API_BASE_URL=http://smollm:8000/v1
+    depends_on:
+      - smollm
+    restart: always
+
 # Define persistent volumes
 volumes:
   grafana-data:
@@ -73,4 +87,6 @@ volumes:
   prometheus-data:
     driver: local
   grafana-provisioning:
+    driver: local
+  open-webui-data:
     driver: local
